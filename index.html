@@ -611,6 +611,9 @@
         const phone = restaurant.tags.phone || '';
         const website = restaurant.tags.website || '';
         
+        // Získat informace o pivu
+        const beerInfo = getBeerInfo(restaurant.tags);
+        
         const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${restaurant.lat},${restaurant.lon}`;
 
         // Přidat kartu restaurace
@@ -621,6 +624,7 @@
           <div class="restaurant-info">
             ${address ? `📍 ${address}<br>` : ''}
             ${cuisineType ? `🍴 ${cuisineType}<br>` : ''}
+            <strong>🍺 Pivo: ${beerInfo}</strong><br>
             ${phone ? `📞 ${phone}<br>` : ''}
             ${website ? `🌐 <a href="${website}" target="_blank">Web</a><br>` : ''}
             ${openingHours ? `🕐 ${openingHours}` : ''}
@@ -642,6 +646,7 @@
             <strong>${name}</strong><br>
             ${address ? `${address}<br>` : ''}
             ${cuisineType ? `Kuchyně: ${cuisineType}<br>` : ''}
+            <strong>Pivo: ${beerInfo}</strong><br>
             Vzdálenost: ${distance} km<br>
             <a href="${navUrl}" target="_blank">Navigovat</a>
           `);
@@ -654,6 +659,44 @@
         const group = L.featureGroup([...markers, userMarker]);
         map.fitBounds(group.getBounds().pad(0.1));
       }
+    }
+
+    function getBeerInfo(tags) {
+      // Kontrola různých tagů, kde může být informace o pivu
+      const beerTags = [
+        tags.brewery,
+        tags.beer,
+        tags['drink:beer'],
+        tags.drink
+      ];
+      
+      // Najít první neprázdný tag s informací o pivu
+      for (let tag of beerTags) {
+        if (tag && tag.trim() !== '') {
+          // Očistit a formátovat text
+          return tag.replace(/;/g, ', ').trim();
+        }
+      }
+      
+      // Zkusit najít pivo v popisu
+      if (tags.description) {
+        const beerBrands = [
+          'Pilsner Urquell', 'Budweiser', 'Budvar', 'Staropramen', 
+          'Kozel', 'Gambrinus', 'Bernard', 'Radegast', 'Krušovice',
+          'Stella Artois', 'Heineken', 'Guinness', 'Svijany'
+        ];
+        
+        const descLower = tags.description.toLowerCase();
+        const foundBeers = beerBrands.filter(beer => 
+          descLower.includes(beer.toLowerCase())
+        );
+        
+        if (foundBeers.length > 0) {
+          return foundBeers.join(', ');
+        }
+      }
+      
+      return 'neuvedeno';
     }
 
     function formatAddress(tags) {
