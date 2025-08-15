@@ -606,7 +606,7 @@
           restaurant.lon
         ).toFixed(2);
         
-        const cuisineType = restaurant.tags.cuisine || '';
+        const cuisineType = getCuisineType(restaurant.tags);
         const openingHours = restaurant.tags.opening_hours || '';
         const phone = restaurant.tags.phone || '';
         const website = restaurant.tags.website || '';
@@ -623,7 +623,7 @@
           <div class="restaurant-name">${name}</div>
           <div class="restaurant-info">
             ${address ? `📍 ${address}<br>` : ''}
-            ${cuisineType ? `🍴 ${cuisineType}<br>` : ''}
+            <strong>🍴 Kuchyně: ${cuisineType}</strong><br>
             <strong>🍺 Pivo: ${beerInfo}</strong><br>
             ${phone ? `📞 ${phone}<br>` : ''}
             ${website ? `🌐 <a href="${website}" target="_blank">Web</a><br>` : ''}
@@ -645,7 +645,7 @@
           .bindPopup(`
             <strong>${name}</strong><br>
             ${address ? `${address}<br>` : ''}
-            ${cuisineType ? `Kuchyně: ${cuisineType}<br>` : ''}
+            <strong>Kuchyně: ${cuisineType}</strong><br>
             <strong>Pivo: ${beerInfo}</strong><br>
             Vzdálenost: ${distance} km<br>
             <a href="${navUrl}" target="_blank">Navigovat</a>
@@ -659,6 +659,58 @@
         const group = L.featureGroup([...markers, userMarker]);
         map.fitBounds(group.getBounds().pad(0.1));
       }
+    }
+
+    function getCuisineType(tags) {
+      if (!tags.cuisine) {
+        return 'neuvedeno';
+      }
+      
+      // Slovník pro překlad běžných typů kuchyní
+      const cuisineTranslations = {
+        'czech': 'česká',
+        'italian': 'italská',
+        'pizza': 'pizza',
+        'asian': 'asijská',
+        'chinese': 'čínská',
+        'vietnamese': 'vietnamská',
+        'japanese': 'japonská',
+        'sushi': 'sushi',
+        'indian': 'indická',
+        'mexican': 'mexická',
+        'burger': 'burgery',
+        'american': 'americká',
+        'french': 'francouzská',
+        'german': 'německá',
+        'greek': 'řecká',
+        'spanish': 'španělská',
+        'thai': 'thajská',
+        'kebab': 'kebab',
+        'turkish': 'turecká',
+        'regional': 'regionální',
+        'international': 'mezinárodní',
+        'steak_house': 'steaková',
+        'seafood': 'mořské plody',
+        'vegetarian': 'vegetariánská',
+        'vegan': 'veganská',
+        'european': 'evropská',
+        'mediterranean': 'středomořská',
+        'balkan': 'balkánská',
+        'slovak': 'slovenská',
+        'polish': 'polská',
+        'hungarian': 'maďarská'
+      };
+      
+      // Rozdělit podle středníku nebo čárky (OSM může mít více typů)
+      const cuisines = tags.cuisine.split(/[;,]/).map(c => c.trim());
+      
+      // Přeložit každý typ
+      const translated = cuisines.map(cuisine => {
+        const lower = cuisine.toLowerCase();
+        return cuisineTranslations[lower] || cuisine;
+      });
+      
+      return translated.join(', ');
     }
 
     function getBeerInfo(tags) {
