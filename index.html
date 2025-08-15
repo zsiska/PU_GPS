@@ -491,14 +491,15 @@
         (
           node["amenity"="restaurant"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
           way["amenity"="restaurant"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
+          relation["amenity"="restaurant"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
           node["amenity"="pub"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
           way["amenity"="pub"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
+          relation["amenity"="pub"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
           node["amenity"="bar"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
           way["amenity"="bar"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
+          relation["amenity"="bar"](around:${radiusMeters},${userLocation.lat},${userLocation.lon});
         );
-        out body;
-        >;
-        out skel qt;
+        out center;
       `;
 
       try {
@@ -516,13 +517,28 @@
 
         const data = await response.json();
         
-        // Filtrovat výsledky
-        let restaurants = data.elements.filter(el => {
-          if (!el.tags) return false;
+        // Zpracovat a získat souřadnice pro všechny elementy
+        let restaurants = [];
+        data.elements.forEach(el => {
+          if (!el.tags || !el.tags.name) return;
+          
+          // Získat souřadnice - mohou být přímo nebo v center objektu
+          let lat = el.lat;
+          let lon = el.lon;
+          
+          if (!lat || !lon) {
+            if (el.center) {
+              lat = el.center.lat;
+              lon = el.center.lon;
+            }
+          }
+          
+          // Pokud stále nemáme souřadnice, přeskočit
+          if (!lat || !lon) return;
           
           // Filtr podle kuchyně
           if (cuisine && el.tags.cuisine && !el.tags.cuisine.includes(cuisine)) {
-            return false;
+            return;
           }
           
           // Filtr podle piva - kontrola různých tagů
@@ -535,7 +551,7 @@
               (el.tags.beer && el.tags.beer.toLowerCase().includes(beerLower)) ||
               (el.tags.description && el.tags.description.toLowerCase().includes(beerLower));
             
-            if (!hasBeer) return false;
+            if (!hasBeer) return;
           }
           
           // Filtr podle otevírací doby
@@ -544,7 +560,12 @@
             // Pro jednoduchost necháme všechny s definovanou otevírací dobou
           }
           
-          return true;
+          // Přidat do výsledků s koordináty
+          restaurants.push({
+            ...el,
+            lat: lat,
+            lon: lon
+          });
         });
 
         displayResults(restaurants);
